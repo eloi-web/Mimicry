@@ -1,0 +1,6 @@
+{
+  "name": "Emotion Arcade Mirror",
+  "description": "Real-time emotion detection mirroring your feelings in a retro UI.",
+  "requestFramePermissions": ["camera"],
+  "majorCapabilities": []
+}
