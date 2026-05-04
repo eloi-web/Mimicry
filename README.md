@@ -1,20 +1,53 @@
-<div align="center">
-<img width="1200" height="475" alt="GHBanner" src="https://github.com/user-attachments/assets/0aa67016-6eaf-458a-adb2-6e31a0763ed6" />
-</div>
+# Mimicry: Emotion Arcade Mirror
 
-# Run and deploy your AI Studio app
+Real-time emotion detection mirroring your feelings in a retro arcade UI. It morphs a pixel-art avatar and generates bouncing emoji particles based on your facial expressions.
 
-This contains everything you need to run your app locally.
+## Features
 
-View your app in AI Studio: https://ai.studio/apps/4283d7fb-68c2-4144-bdc6-0d6d5ca49a6e
+* **Real-time Facial tracking:** Uses `face-api.js` directly in the browser for expression monitoring.
+* **Retro Arcade UI:** Built with custom typography, glowing borders, and a cyberpunk neon color palette.
+* **Pixel Avatar:** An interactive ASCII-style face that transforms to match your detected emotion (Happy, Sad, Angry, Surprised, Neutral).
+* **Particle Physics:** Bouncing emoji particles dynamically react to emotional changes using custom Canvas/DOM physics.
+* **Privacy First:** All ML processing happens locally in your browser. No images or camera feeds are sent to any server.
 
-## Run Locally
+## Tech Stack
 
-**Prerequisites:**  Node.js
+* **Frontend:** React, TypeScript, Vite
+* **Styling:** Tailwind CSS, custom CSS animations
+* **Machine Learning:** `face-api.js` (tinyFaceDetector & faceExpressionNet)
+* **Camera Handling:** `react-webcam`
+* **Animations:** Motion (`motion/react`)
 
+## Getting Started
 
-1. Install dependencies:
-   `npm install`
-2. Set the `GEMINI_API_KEY` in [.env.local](.env.local) to your Gemini API key
-3. Run the app:
-   `npm run dev`
+### Prerequisites
+
+Ensure you have Node.js and npm installed on your machine.
+
+### Installation
+
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+
+### Running Locally
+
+To start the development server:
+
+```bash
+npm run dev
+```
+
+Open your browser and navigate to `http://localhost:3000` (or the port specified by Vite).
+
+### Building for Production
+
+To create a production build:
+
+```bash
+npm run build
+```
+
+The output will be in the `dist` directory. You can then serve this directory using a static file server.
