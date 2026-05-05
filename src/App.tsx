@@ -1,7 +1,8 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import Webcam from 'react-webcam';
 import * as faceapi from '@vladmandic/face-api';
 import { motion } from 'motion/react';
+import { Github } from 'lucide-react';
 
 // --- Constants & Types ---
 const EMOTIONS = ['happy', 'sad', 'angry', 'surprised', 'neutral'] as const;
@@ -27,7 +28,7 @@ const EMOTION_EMOJIS: Record<Emotion, string> = {
 // --- Audio System ---
 class RetroAudio {
   ctx: AudioContext | null = null;
-  
+
   init() {
     if (typeof window === 'undefined') return;
     const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
@@ -46,19 +47,19 @@ class RetroAudio {
       const gain = this.ctx.createGain();
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      
+
       osc.type = 'square';
       const now = this.ctx.currentTime;
       osc.frequency.setValueAtTime(150, now);
       osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
-      
+
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.05, now + 0.05);
       gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      
+
       osc.start(now);
       osc.stop(now + 0.2);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   playCameraStop() {
@@ -68,19 +69,19 @@ class RetroAudio {
       const gain = this.ctx.createGain();
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      
+
       osc.type = 'square';
       const now = this.ctx.currentTime;
       osc.frequency.setValueAtTime(600, now);
       osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
-      
+
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.05, now + 0.05);
       gain.gain.linearRampToValueAtTime(0, now + 0.2);
-      
+
       osc.start(now);
       osc.stop(now + 0.2);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   playEmotionChange(emotion: string) {
@@ -90,7 +91,7 @@ class RetroAudio {
       const gain = this.ctx.createGain();
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      
+
       osc.type = 'sine';
       const freqs: Record<string, number> = {
         happy: 800,
@@ -100,18 +101,18 @@ class RetroAudio {
         neutral: 400
       };
       const freq = freqs[emotion] || 400;
-      
+
       const now = this.ctx.currentTime;
       osc.frequency.setValueAtTime(freq * 0.8, now);
       osc.frequency.exponentialRampToValueAtTime(freq, now + 0.1);
-      
+
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.05, now + 0.02);
       gain.gain.linearRampToValueAtTime(0, now + 0.1);
-      
+
       osc.start(now);
       osc.stop(now + 0.1);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   playBurst() {
@@ -121,19 +122,19 @@ class RetroAudio {
       const gain = this.ctx.createGain();
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      
+
       osc.type = 'sawtooth';
       const now = this.ctx.currentTime;
       osc.frequency.setValueAtTime(100, now);
       osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
-      
+
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.05, now + 0.02);
       gain.gain.linearRampToValueAtTime(0, now + 0.3);
-      
+
       osc.start(now);
       osc.stop(now + 0.3);
-    } catch(e) {}
+    } catch (e) { }
   }
 
   playCollision() {
@@ -143,19 +144,19 @@ class RetroAudio {
       const gain = this.ctx.createGain();
       osc.connect(gain);
       gain.connect(this.ctx.destination);
-      
+
       osc.type = 'square';
       const now = this.ctx.currentTime;
       osc.frequency.setValueAtTime(1200, now);
       osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
-      
+
       gain.gain.setValueAtTime(0, now);
       gain.gain.linearRampToValueAtTime(0.01, now + 0.01);
       gain.gain.linearRampToValueAtTime(0, now + 0.05);
-      
+
       osc.start(now);
       osc.stop(now + 0.05);
-    } catch(e) {}
+    } catch (e) { }
   }
 }
 
@@ -174,7 +175,7 @@ const useEmotionDetection = (
   });
   const [isModelReady, setIsModelReady] = useState(false);
   const [useMock, setUseMock] = useState(false);
-  
+
   // Load models
   useEffect(() => {
     let mounted = true;
@@ -233,7 +234,7 @@ const useEmotionDetection = (
           try {
             const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
             const detections = await faceapi.detectSingleFace(video, options).withFaceExpressions();
-            
+
             if (detections) {
               const expressions = detections.expressions;
               let topEmotion = 'neutral' as Emotion;
@@ -244,7 +245,7 @@ const useEmotionDetection = (
                   topEmotion = emo as Emotion;
                 }
               }
-              
+
               setEmotion(topEmotion);
               setScores({
                 happy: Math.round((expressions.happy || 0) * 100),
@@ -255,15 +256,15 @@ const useEmotionDetection = (
               });
             }
           } catch (e) {
-             console.warn("Face detection error:", e);
+            console.warn("Face detection error:", e);
           } finally {
-             isDetecting = false;
+            isDetecting = false;
           }
         }
       }
       rAF = requestAnimationFrame(detect);
     };
-    
+
     detect();
     return () => cancelAnimationFrame(rAF);
   }, [cameraActive, isModelReady, useMock, webcamRef]);
@@ -297,39 +298,39 @@ const MorphingAvatar = ({ emotion }: { emotion: Emotion }) => {
     const render = () => {
       // Accumulate time for sinusoidal movements
       time += 0.05;
-      
+
       ctx.clearRect(0, 0, canvas.width, canvas.height);
-      
+
       // Draw base pixel grid text
-      ctx.fillStyle = '#39FF14'; // Neon Green
+      ctx.fillStyle = '#dcf310f5'; // Neon Green
       ctx.textBaseline = 'middle';
       ctx.textAlign = 'center';
-      ctx.font = 'bold 48px "CustomFontPlaceholder", "Space Grotesk", sans-serif';
-      ctx.shadowColor = '#39FF14';
+      ctx.font = 'bold 48px "Graph35Pix", "Space Grotesk", sans-serif';
+      ctx.shadowColor = '#dcf310f5';
       ctx.shadowBlur = 15;
 
       // Handle randomized blinking logic
       blinkTimer++;
       if (!isBlinking && blinkTimer > 150 + Math.random() * 100) {
-         isBlinking = true;
-         blinkTimer = 0;
+        isBlinking = true;
+        blinkTimer = 0;
       } else if (isBlinking && blinkTimer > 8) {
-         isBlinking = false;
-         blinkTimer = 0;
+        isBlinking = false;
+        blinkTimer = 0;
       }
 
       let faceStr = '– _ –';
-      
+
       if (isBlinking) {
-         faceStr = '– _ –'; // universal blink
+        faceStr = '– _ –'; // universal blink
       } else {
-         switch (emotionRef.current) {
-           case 'happy': faceStr = '^ _ ^'; break;
-           case 'sad': faceStr = 'O ﹏ O'; break;
-           case 'angry': faceStr = '> _ <'; break;
-           case 'surprised': faceStr = 'O _ O'; break;
-           case 'neutral': faceStr = '– _ –'; break;
-         }
+        switch (emotionRef.current) {
+          case 'happy': faceStr = '^ _ ^'; break;
+          case 'sad': faceStr = 'O ﹏ O'; break;
+          case 'angry': faceStr = '> _ <'; break;
+          case 'surprised': faceStr = 'O _ O'; break;
+          case 'neutral': faceStr = '– _ –'; break;
+        }
       }
 
       // Subtle float/bob movement (Lissajous-style curve for head tracking feel)
@@ -337,7 +338,7 @@ const MorphingAvatar = ({ emotion }: { emotion: Emotion }) => {
       const swayX = Math.cos(time * 0.5) * 3;
 
       ctx.fillText(faceStr, canvas.width / 2 + swayX, canvas.height / 2 + bobY);
-      
+
       // Cleanup shadow
       ctx.shadowBlur = 0;
 
@@ -351,10 +352,10 @@ const MorphingAvatar = ({ emotion }: { emotion: Emotion }) => {
 
   return (
     <div className="flex flex-col items-center gap-2">
-      <div className="retro-border border-[#39FF14] bg-neutral-900/80 w-64 h-32 flex items-center justify-center p-2 relative shadow-[0_0_15px_rgba(57,255,20,0.2)]">
+      <div className="retro-border border-[#dcf310f5] bg-neutral-900/80 w-64 h-32 flex items-center justify-center p-2 relative shadow-[0_0_15px_rgba(220,243,16,0.2)]">
         <canvas ref={canvasRef} width={240} height={110} />
       </div>
-      <span className="text-[#39FF14] text-xs font-bold tracking-widest uppercase">
+      <span className="text-[#dcf310f5] text-xs font-bold tracking-widest ">
         SUBJECT STATUS: {emotion}
       </span>
     </div>
@@ -370,17 +371,17 @@ const EmotionCard: React.FC<{ name: Emotion; icon: string; value: number; active
     >
       <div className="flex flex-col w-full gap-2">
         <div className="flex items-center justify-between w-full">
-          <span className="font-body-lg text-[18px] uppercase font-bold tracking-wider">
+          <span className="font-body-lg text-[18px]  font-bold tracking-wider">
             [ {name} ]
           </span>
           <span className="material-symbols-outlined text-3xl">{icon}</span>
         </div>
         <div className="h-2 w-full bg-white/10 relative overflow-hidden">
-          <motion.div 
+          <motion.div
             initial={{ width: 0 }}
-            animate={{ width: `${value}%` }} 
+            animate={{ width: `${value}%` }}
             transition={{ duration: 0.5, ease: 'easeOut' }}
-            className={`absolute top-0 left-0 h-full ${active ? 'neon-green-bg-glow' : 'bg-white/40'}`} 
+            className={`absolute top-0 left-0 h-full ${active ? 'neon-green-bg-glow' : 'bg-white/40'}`}
           />
         </div>
       </div>
@@ -390,8 +391,8 @@ const EmotionCard: React.FC<{ name: Emotion; icon: string; value: number; active
 
 // Bouncing Emotions for Mobile
 const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
-  const [particles, setParticles] = useState<{id: number, e: Emotion, x: number, y: number, vx: number, vy: number, life: number, collisionScale: number, isBursting?: boolean}[]>([]);
-  
+  const [particles, setParticles] = useState<{ id: number, e: Emotion, x: number, y: number, vx: number, vy: number, life: number, collisionScale: number, isBursting?: boolean }[]>([]);
+
   // Add particle on emotion change
   useEffect(() => {
     const newParticle = {
@@ -401,7 +402,7 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
       y: window.innerHeight - 80, // Start lower down
       vx: (Math.random() - 0.5) * 12, // light horizontal scatter
       vy: -15 - Math.random() * 8, // shoot up
-      life: 1.0, 
+      life: 1.0,
       collisionScale: 1.0,
     };
     setParticles(p => [...p, newParticle].slice(-25)); // max 25 to crowd them
@@ -416,64 +417,64 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
       lastTime = time;
 
       setParticles(prev => prev.map(p => {
-         let { x, y, vx, vy, life, collisionScale, e, isBursting } = p;
+        let { x, y, vx, vy, life, collisionScale, e, isBursting } = p;
 
-         vy += 0.8 * dt; // gravity
-         x += vx * dt;
-         y += vy * dt;
+        vy += 0.8 * dt; // gravity
+        x += vx * dt;
+        y += vy * dt;
 
-         const h = window.innerHeight;
-         const w = window.innerWidth;
-         const size = 60; 
+        const h = window.innerHeight;
+        const w = window.innerWidth;
+        const size = 60;
 
-         // Floor collision
-         if (y > h - size && !isBursting) {
-           y = h - size;
-           if (vy > 2) {
-               collisionScale = 1.4; // scale up on hit
-               retroAudio.playCollision();
-           }
-           vy *= -0.5; // bounce
-           vx *= 0.8;  // friction
-         }
-         
-         // Wall collision
-         if (!isBursting) {
-             if (x < 0) { 
-                 x = 0; 
-                 if (Math.abs(vx) > 2) {
-                     collisionScale = 1.3;
-                     retroAudio.playCollision();
-                 }
-                 vx *= -0.6; 
-             } else if (x > w - size) { 
-                 x = w - size; 
-                 if (Math.abs(vx) > 2) {
-                     collisionScale = 1.3;
-                     retroAudio.playCollision();
-                 }
-                 vx *= -0.6; 
-             }
-         }
+        // Floor collision
+        if (y > h - size && !isBursting) {
+          y = h - size;
+          if (vy > 2) {
+            collisionScale = 1.4; // scale up on hit
+            retroAudio.playCollision();
+          }
+          vy *= -0.5; // bounce
+          vx *= 0.8;  // friction
+        }
 
-         // Angry burst mechanic
-         if (e === 'angry' && vy > -2 && vy < 2 && !isBursting && y < h * 0.7) {
-             isBursting = true;
-             vx = 0;
-             vy = 0;
-             retroAudio.playBurst();
-         }
+        // Wall collision
+        if (!isBursting) {
+          if (x < 0) {
+            x = 0;
+            if (Math.abs(vx) > 2) {
+              collisionScale = 1.3;
+              retroAudio.playCollision();
+            }
+            vx *= -0.6;
+          } else if (x > w - size) {
+            x = w - size;
+            if (Math.abs(vx) > 2) {
+              collisionScale = 1.3;
+              retroAudio.playCollision();
+            }
+            vx *= -0.6;
+          }
+        }
 
-         if (isBursting) {
-             collisionScale += 0.2 * dt;
-             life -= 0.05 * dt;
-         } else {
-             life -= 0.002 * dt; // fade extremely slowly so they pile up, slightly faster than before to make shrink noticeable
-             collisionScale = 1.0 + (collisionScale - 1.0) * 0.85; // smoothly return to 1
-         }
+        // Angry burst mechanic
+        if (e === 'angry' && vy > -2 && vy < 2 && !isBursting && y < h * 0.7) {
+          isBursting = true;
+          vx = 0;
+          vy = 0;
+          retroAudio.playBurst();
+        }
 
-         return { ...p, x, y, vx, vy, life, collisionScale, isBursting };
-      }).filter(p => p.life > 0)); 
+        if (isBursting) {
+          collisionScale += 0.2 * dt;
+          life -= 0.05 * dt;
+        } else {
+          life -= 0.002 * dt; // fade extremely slowly so they pile up, slightly faster than before to make shrink noticeable
+          collisionScale = 1.0 + (collisionScale - 1.0) * 0.85; // smoothly return to 1
+        }
+
+        return { ...p, x, y, vx, vy, life, collisionScale, isBursting };
+      }).filter(p => p.life > 0));
 
       rAF = requestAnimationFrame(loop);
     };
@@ -483,7 +484,7 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
 
   const EMOTION_COLORS: Record<Emotion, string> = {
     neutral: '211,211,211',
-    happy: '57,255,20', // neon green
+    happy: '220,243,16', // neon green
     sad: '0,191,255', // deep sky blue
     angry: '255,69,0', // red-orange
     surprised: '255,105,180' // hot pink
@@ -494,7 +495,7 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
       {particles.map(p => {
         const color = EMOTION_COLORS[p.e];
         const scale = Math.max(0.2, p.life) * p.collisionScale;
-        
+
         return (
           <div
             key={p.id}
@@ -517,9 +518,9 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
 export default function App() {
   const [cameraActive, setCameraActive] = useState(false);
   const [denied, setDenied] = useState(false);
-  
+
   const webcamRef = useRef<Webcam>(null);
-  
+
   const { emotion, scores, isModelReady, useMock } = useEmotionDetection(webcamRef, cameraActive);
 
   const handleStartCamera = () => {
@@ -527,33 +528,39 @@ export default function App() {
   };
 
   return (
-    <div className="bg-background text-on-background min-h-screen relative overflow-hidden font-body-md text-body-md dark selection:bg-[#39FF14] selection:text-black">
+    <div className="bg-background text-on-background min-h-screen relative overflow-hidden font-body-md text-body-md dark selection:bg-[#dcf310f5] selection:text-black">
       {/* TopNavBar */}
-      <nav className="relative z-50 flex justify-between items-center px-4 md:px-6 py-4 font-body-lg uppercase tracking-widest pointer-events-none">
-        <div className="text-xl md:text-2xl font-black text-white hover:text-[#39FF14] transition-colors drop-shadow-[2px_2px_0px_rgba(0,0,0,1)] bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10 pointer-events-auto">
-          EMOTION <span className="text-[#39FF14]">MIRROR</span>
+      <nav className="relative z-50 flex justify-between items-center px-4 md:px-6 py-4 font-main tracking-widest pointer-events-none">
+        <div className="text-xl md:text-2xl text-white hover:text-[#dcf310f5] transition-colors drop-shadow-[2px_2px_0px_rgba(0,0,0,1)] bg-black/60 backdrop-blur-md px-3 py-1 border border-white/10 pointer-events-auto">
+          Mimicry
         </div>
         <div className="flex gap-4 items-center pointer-events-auto">
           {cameraActive && (
-            <button 
-                onClick={() => {
-                   retroAudio.playCameraStop();
-                   setCameraActive(false);
-                }}
-                className="px-3 py-1 bg-red-500/20 text-red-500 hover:bg-red-500/40 hover:text-red-400 border border-red-500/50 backdrop-blur-md transition-colors cursor-pointer text-sm font-label-caps tracking-widest"
+            <button
+              onClick={() => {
+                retroAudio.playCameraStop();
+                setCameraActive(false);
+              }}
+              className="px-3 py-1 bg-red-500/20 text-red-500 hover:bg-red-500/40 hover:text-red-400 border border-red-500/50 backdrop-blur-md transition-colors cursor-pointer text-sm font-main tracking-widest"
             >
               STOP
             </button>
           )}
-          <button className="text-white hover:text-[#39FF14] transition-colors p-2 cursor-pointer bg-black/60 backdrop-blur-md border border-white/10">
-            <span className="material-symbols-outlined">code</span>
-          </button>
+          <a
+            href="https://github.com/eloi-web/Mimicry"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-white hover:text-[#dcf310f5] transition-colors px-3 py-2 cursor-pointer bg-black/60 backdrop-blur-md border border-white/10 text-sm font-main tracking-widest "
+          >
+            <Github size={16} />
+            GitHub
+          </a>
         </div>
       </nav>
 
       {/* Main Layout Area */}
       <div className="relative z-10 flex flex-col md:flex-row w-full h-[calc(100vh-70px)] pt-4 pb-4 px-4 gap-4">
-        
+
         {/* Empty State / Not Started */}
         {!cameraActive && (
           <div className="absolute inset-0 z-50 bg-neutral-900 flex flex-col items-center justify-center text-center">
@@ -562,15 +569,26 @@ export default function App() {
                 {denied ? 'error' : 'videocam_off'}
               </span>
               <div className="flex flex-col items-center gap-2">
-                <span className={`font-headline-md text-headline-md animate-pulse uppercase tracking-widest ${denied ? 'text-red-500' : 'text-white'}`}>
+                <span className={`font-headline-md text-headline-md animate-pulse  tracking-widest ${denied ? 'text-red-500' : 'text-white'}`}>
                   {denied ? 'ACCESS DENIED' : 'SIGNAL LOST'}
                 </span>
                 <p className="text-neutral-400 text-sm max-w-sm">
                   {denied ? 'Camera permission was denied. Please allow access in your browser settings to continue.' : 'System requires visual input to analyze affective states.'}
                 </p>
               </div>
-              {!denied && (
-                <motion.button 
+              {denied ? (
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.9 }}
+                  transition={{ type: "spring", stiffness: 400, damping: 15 }}
+                  onClick={() => setDenied(false)}
+                  className="mt-6 px-8 py-4 border-2 border-red-500 text-red-400 hover:bg-red-500/20 transition-colors  font-label-caps tracking-widest cursor-pointer"
+                  style={{ touchAction: 'manipulation' }}
+                >
+                  RETRY
+                </motion.button>
+              ) : (
+                <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 400, damping: 15 }}
@@ -579,7 +597,7 @@ export default function App() {
                     retroAudio.playCameraStart();
                     handleStartCamera();
                   }}
-                  className="mt-6 px-8 py-4 retro-border text-white hover:bg-[#39FF14] hover:border-[#39FF14] hover:text-black transition-colors uppercase font-label-caps tracking-widest pixel-shadow hover:pixel-shadow-active cursor-pointer"
+                  className="mt-6 px-8 py-4 retro-border text-white hover:bg-[#dcf310f5] hover:border-[#dcf310f5] hover:text-black transition-colors  font-label-caps tracking-widest pixel-shadow hover:pixel-shadow-active cursor-pointer"
                   style={{ touchAction: 'manipulation' }}
                 >
                   ENABLE CAMERA TO CONTINUE
@@ -591,45 +609,45 @@ export default function App() {
 
         {/* Left Column: Emotion Cards */}
         <div className="hidden md:flex w-64 flex-col gap-3 shrink-0 h-full overflow-y-auto scroll-none pr-2 relative z-20">
-            {EMOTIONS.map(emo => (
-              <EmotionCard 
-                key={emo} 
-                name={emo} 
-                icon={EMOTION_ICONS[emo]} 
-                value={scores[emo]} 
-                active={emotion === emo} 
-              />
-            ))}
+          {EMOTIONS.map(emo => (
+            <EmotionCard
+              key={emo}
+              name={emo}
+              icon={EMOTION_ICONS[emo]}
+              value={scores[emo]}
+              active={emotion === emo}
+            />
+          ))}
         </div>
 
         {/* Center Canvas / Webcam Area */}
         <div className="flex-1 flex flex-col items-center justify-center relative min-h-[40vh] md:min-h-0 border border-white/10 bg-black max-w-4xl mx-auto w-full z-10 overflow-hidden">
-             {/* Bouncing Faces for Mobile */}
-             {cameraActive && <BouncingEmotions currentEmotion={emotion} />}
+          {/* Bouncing Faces for Mobile */}
+          {cameraActive && <BouncingEmotions currentEmotion={emotion} />}
 
-             {cameraActive && (
-               <Webcam
-                 ref={webcamRef}
-                 audio={false}
-                 className="w-full h-full object-cover"
-                 onUserMediaError={() => { setDenied(true); setCameraActive(false); }}
-                 mirrored={true} // standard for mirrors
-               />
-             )}
-             
-             {/* HUD Overlay inside Camera */}
-             {cameraActive && (
-                 <div className="absolute top-4 left-4 border border-[#39FF14]/50 bg-black/60 px-3 py-1 backdrop-blur-sm pointer-events-none">
-                   <span className="text-[#39FF14] text-xs font-bold animate-pulse">REC ●</span>
-                 </div>
-             )}
+          {cameraActive && (
+            <Webcam
+              ref={webcamRef}
+              audio={false}
+              className="w-full h-full object-cover"
+              onUserMediaError={() => { setDenied(true); setCameraActive(false); }}
+              mirrored={true} // standard for mirrors
+            />
+          )}
 
-             {/* Morphing Avatar positioned at bottom center over camera */}
-             {cameraActive && (
-               <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
-                  <MorphingAvatar emotion={emotion} />
-               </div>
-             )}
+          {/* HUD Overlay inside Camera */}
+          {cameraActive && (
+            <div className="absolute top-4 left-4 border border-[#dcf310f5]/50 bg-black/60 px-3 py-1 backdrop-blur-sm pointer-events-none">
+              <span className="text-[#dcf310f5] text-xs font-bold animate-pulse">REC ●</span>
+            </div>
+          )}
+
+          {/* Morphing Avatar positioned at bottom center over camera */}
+          {cameraActive && (
+            <div className="absolute bottom-4 left-1/2 -translate-x-1/2 z-20">
+              <MorphingAvatar emotion={emotion} />
+            </div>
+          )}
         </div>
 
 
