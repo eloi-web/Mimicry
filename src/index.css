@@ -2,53 +2,66 @@
 @import url('https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;600;700;900&family=Rethink+Sans:wght@400;500;600;700&display=swap');
 @import "tailwindcss";
 
+@font-face {
+    font-family: "Graph35Pix";
+    src: url('/fonts/graph-35-pix.ttf') format('truetype');
+    font-weight: normal;
+    font-style: normal;
+    font-display: swap;
+}
+
 @theme {
-  --color-background: #121314;
-  --color-on-background: #e3e2e2;
-  --color-surface: #121314;
-  --color-on-surface: #e3e2e2;
-  --color-outline: #8e9192;
+    --color-background: #121314;
+    --color-on-background: #e3e2e2;
+    --color-surface: #121314;
+    --color-on-surface: #e3e2e2;
+    --color-outline: #8e9192;
 
-  --font-main: "CustomFontPlaceholder", "Space Grotesk", sans-serif;
-  --font-sub: "Rethink Sans", sans-serif;
+    --font-main: "Graph35Pix", "Space Grotesk", sans-serif;
+    --font-sub: "Rethink Sans", sans-serif;
 
-  --font-body-md: var(--font-sub);
-  --font-body-lg: var(--font-sub);
-  --font-headline-md: var(--font-main);
-  --font-label-caps: var(--font-sub);
+    --font-body-md: var(--font-sub);
+    --font-body-lg: var(--font-sub);
+    --font-headline-md: var(--font-main);
+    --font-label-caps: var(--font-sub);
 }
 
 body {
-  font-family: var(--font-sub);
+    font-family: var(--font-sub);
 }
 
 .pixel-shadow {
     box-shadow: 4px 4px 0px 0px #F5F5F5;
 }
+
 .pixel-shadow-active {
     box-shadow: 0px 0px 0px 0px #F5F5F5;
     transform: translate(4px, 4px);
 }
+
 .retro-border {
     border: 2px solid #F5F5F5;
 }
 
 .neon-green-glow {
-    border-color: #39FF14;
-    color: #39FF14;
-    box-shadow: 0 0 10px #39FF14, inset 0 0 10px #39FF14;
-    text-shadow: 0 0 5px #39FF14;
+    border-color: #dcf310f5;
+    color: #dcf310f5;
+    box-shadow: 0 0 10px #dcf310f5, inset 0 0 10px #dcf310f5;
+    text-shadow: 0 0 5px #dcf310f5;
 }
 
 .neon-green-bg-glow {
-    background-color: #39FF14;
-    box-shadow: 0 0 10px #39FF14;
+    background-color: #dcf310f5;
+    box-shadow: 0 0 10px #dcf310f5;
 }
 
 .scroll-none::-webkit-scrollbar {
     display: none;
 }
+
 .scroll-none {
-    -ms-overflow-style: none; /* IE and Edge */
-    scrollbar-width: none; /* Firefox */
+    -ms-overflow-style: none;
+    /* IE and Edge */
+    scrollbar-width: none;
+    /* Firefox */
 }
