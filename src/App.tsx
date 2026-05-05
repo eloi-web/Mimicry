@@ -24,6 +24,143 @@ const EMOTION_EMOJIS: Record<Emotion, string> = {
   neutral: '😐',
 };
 
+// --- Audio System ---
+class RetroAudio {
+  ctx: AudioContext | null = null;
+  
+  init() {
+    if (typeof window === 'undefined') return;
+    const AudioContextClass = window.AudioContext || (window as any).webkitAudioContext;
+    if (!this.ctx && AudioContextClass) {
+      this.ctx = new AudioContextClass();
+    }
+    if (this.ctx?.state === 'suspended') {
+      this.ctx.resume();
+    }
+  }
+
+  playCameraStart() {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.type = 'square';
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(150, now);
+      osc.frequency.exponentialRampToValueAtTime(600, now + 0.2);
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch(e) {}
+  }
+
+  playCameraStop() {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.type = 'square';
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(600, now);
+      osc.frequency.exponentialRampToValueAtTime(150, now + 0.2);
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.05);
+      gain.gain.linearRampToValueAtTime(0, now + 0.2);
+      
+      osc.start(now);
+      osc.stop(now + 0.2);
+    } catch(e) {}
+  }
+
+  playEmotionChange(emotion: string) {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.type = 'sine';
+      const freqs: Record<string, number> = {
+        happy: 800,
+        sad: 300,
+        angry: 150,
+        surprised: 1200,
+        neutral: 400
+      };
+      const freq = freqs[emotion] || 400;
+      
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(freq * 0.8, now);
+      osc.frequency.exponentialRampToValueAtTime(freq, now + 0.1);
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + 0.1);
+      
+      osc.start(now);
+      osc.stop(now + 0.1);
+    } catch(e) {}
+  }
+
+  playBurst() {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.type = 'sawtooth';
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(100, now);
+      osc.frequency.exponentialRampToValueAtTime(40, now + 0.3);
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.05, now + 0.02);
+      gain.gain.linearRampToValueAtTime(0, now + 0.3);
+      
+      osc.start(now);
+      osc.stop(now + 0.3);
+    } catch(e) {}
+  }
+
+  playCollision() {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const gain = this.ctx.createGain();
+      osc.connect(gain);
+      gain.connect(this.ctx.destination);
+      
+      osc.type = 'square';
+      const now = this.ctx.currentTime;
+      osc.frequency.setValueAtTime(1200, now);
+      osc.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+      
+      gain.gain.setValueAtTime(0, now);
+      gain.gain.linearRampToValueAtTime(0.01, now + 0.01);
+      gain.gain.linearRampToValueAtTime(0, now + 0.05);
+      
+      osc.start(now);
+      osc.stop(now + 0.05);
+    } catch(e) {}
+  }
+}
+
+export const retroAudio = new RetroAudio();
+
 // --- Hooks ---
 
 // 1. Emotion Detection
@@ -57,6 +194,12 @@ const useEmotionDetection = (
 
   // Detection Loop
   useEffect(() => {
+    if (cameraActive) {
+      retroAudio.playEmotionChange(emotion);
+    }
+  }, [emotion, cameraActive]);
+
+  useEffect(() => {
     if (!cameraActive) return;
 
     if (useMock) {
@@ -81,31 +224,41 @@ const useEmotionDetection = (
 
     // Real FaceAPI mode
     let rAF: number;
+    let isDetecting = false;
     const detect = async () => {
-      if (webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4) {
+      if (!isDetecting && webcamRef.current && webcamRef.current.video && webcamRef.current.video.readyState === 4) {
         const video = webcamRef.current.video;
-        const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
-        const detections = await faceapi.detectSingleFace(video, options).withFaceExpressions();
-        
-        if (detections) {
-          const expressions = detections.expressions;
-          let topEmotion = 'neutral' as Emotion;
-          let maxScore = 0;
-          for (const [emo, score] of Object.entries(expressions)) {
-            if (EMOTIONS.includes(emo as Emotion) && score > maxScore) {
-              maxScore = score;
-              topEmotion = emo as Emotion;
+        if (video.videoWidth > 0 && video.videoHeight > 0) {
+          isDetecting = true;
+          try {
+            const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+            const detections = await faceapi.detectSingleFace(video, options).withFaceExpressions();
+            
+            if (detections) {
+              const expressions = detections.expressions;
+              let topEmotion = 'neutral' as Emotion;
+              let maxScore = 0;
+              for (const [emo, score] of Object.entries(expressions)) {
+                if (EMOTIONS.includes(emo as Emotion) && score > maxScore) {
+                  maxScore = score;
+                  topEmotion = emo as Emotion;
+                }
+              }
+              
+              setEmotion(topEmotion);
+              setScores({
+                happy: Math.round((expressions.happy || 0) * 100),
+                sad: Math.round((expressions.sad || 0) * 100),
+                angry: Math.round((expressions.angry || 0) * 100),
+                surprised: Math.round((expressions.surprised || 0) * 100),
+                neutral: Math.round((expressions.neutral || 0) * 100),
+              });
             }
+          } catch (e) {
+             console.warn("Face detection error:", e);
+          } finally {
+             isDetecting = false;
           }
-          
-          setEmotion(topEmotion);
-          setScores({
-            happy: Math.round((expressions.happy || 0) * 100),
-            sad: Math.round((expressions.sad || 0) * 100),
-            angry: Math.round((expressions.angry || 0) * 100),
-            surprised: Math.round((expressions.surprised || 0) * 100),
-            neutral: Math.round((expressions.neutral || 0) * 100),
-          });
         }
       }
       rAF = requestAnimationFrame(detect);
@@ -123,6 +276,12 @@ const useEmotionDetection = (
 // Morphing Avatar (Pixel Face)
 const MorphingAvatar = ({ emotion }: { emotion: Emotion }) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const emotionRef = useRef<Emotion>(emotion);
+
+  // Sync emotion prop to ref for the animation loop
+  useEffect(() => {
+    emotionRef.current = emotion;
+  }, [emotion]);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -130,30 +289,65 @@ const MorphingAvatar = ({ emotion }: { emotion: Emotion }) => {
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
 
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    // Draw base pixel grid text
-    ctx.fillStyle = '#39FF14'; // Neon Green
-    ctx.textBaseline = 'middle';
-    ctx.textAlign = 'center';
-    ctx.font = 'bold 48px "CustomFontPlaceholder", "Space Grotesk", sans-serif';
-    ctx.shadowColor = '#39FF14';
-    ctx.shadowBlur = 15;
+    let rAF: number;
+    let blinkTimer = 0;
+    let isBlinking = false;
+    let time = 0;
 
-    let faceStr = '– _ –';
-    switch (emotion) {
-      case 'happy': faceStr = '^ _ ^'; break;
-      case 'sad': faceStr = 'O ﹏ O'; break;
-      case 'angry': faceStr = '> _ <'; break;
-      case 'surprised': faceStr = 'O _ O'; break;
-      case 'neutral': faceStr = '– _ –'; break;
-    }
+    const render = () => {
+      // Accumulate time for sinusoidal movements
+      time += 0.05;
+      
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      
+      // Draw base pixel grid text
+      ctx.fillStyle = '#39FF14'; // Neon Green
+      ctx.textBaseline = 'middle';
+      ctx.textAlign = 'center';
+      ctx.font = 'bold 48px "CustomFontPlaceholder", "Space Grotesk", sans-serif';
+      ctx.shadowColor = '#39FF14';
+      ctx.shadowBlur = 15;
 
-    ctx.fillText(faceStr, canvas.width / 2, canvas.height / 2);
-    
-    // Cleanup shadow
-    ctx.shadowBlur = 0;
-  }, [emotion]);
+      // Handle randomized blinking logic
+      blinkTimer++;
+      if (!isBlinking && blinkTimer > 150 + Math.random() * 100) {
+         isBlinking = true;
+         blinkTimer = 0;
+      } else if (isBlinking && blinkTimer > 8) {
+         isBlinking = false;
+         blinkTimer = 0;
+      }
+
+      let faceStr = '– _ –';
+      
+      if (isBlinking) {
+         faceStr = '– _ –'; // universal blink
+      } else {
+         switch (emotionRef.current) {
+           case 'happy': faceStr = '^ _ ^'; break;
+           case 'sad': faceStr = 'O ﹏ O'; break;
+           case 'angry': faceStr = '> _ <'; break;
+           case 'surprised': faceStr = 'O _ O'; break;
+           case 'neutral': faceStr = '– _ –'; break;
+         }
+      }
+
+      // Subtle float/bob movement (Lissajous-style curve for head tracking feel)
+      const bobY = Math.sin(time) * 4;
+      const swayX = Math.cos(time * 0.5) * 3;
+
+      ctx.fillText(faceStr, canvas.width / 2 + swayX, canvas.height / 2 + bobY);
+      
+      // Cleanup shadow
+      ctx.shadowBlur = 0;
+
+      rAF = requestAnimationFrame(render);
+    };
+
+    rAF = requestAnimationFrame(render);
+
+    return () => cancelAnimationFrame(rAF);
+  }, []); // Run loop once, use ref for state updates
 
   return (
     <div className="flex flex-col items-center gap-2">
@@ -196,7 +390,7 @@ const EmotionCard: React.FC<{ name: Emotion; icon: string; value: number; active
 
 // Bouncing Emotions for Mobile
 const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
-  const [particles, setParticles] = useState<{id: number, e: Emotion, x: number, y: number, vx: number, vy: number, life: number}[]>([]);
+  const [particles, setParticles] = useState<{id: number, e: Emotion, x: number, y: number, vx: number, vy: number, life: number, collisionScale: number, isBursting?: boolean}[]>([]);
   
   // Add particle on emotion change
   useEffect(() => {
@@ -208,6 +402,7 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
       vx: (Math.random() - 0.5) * 12, // light horizontal scatter
       vy: -15 - Math.random() * 8, // shoot up
       life: 1.0, 
+      collisionScale: 1.0,
     };
     setParticles(p => [...p, newParticle].slice(-25)); // max 25 to crowd them
   }, [currentEmotion]);
@@ -221,7 +416,7 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
       lastTime = time;
 
       setParticles(prev => prev.map(p => {
-         let { x, y, vx, vy, life } = p;
+         let { x, y, vx, vy, life, collisionScale, e, isBursting } = p;
 
          vy += 0.8 * dt; // gravity
          x += vx * dt;
@@ -232,19 +427,52 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
          const size = 60; 
 
          // Floor collision
-         if (y > h - size) {
+         if (y > h - size && !isBursting) {
            y = h - size;
+           if (vy > 2) {
+               collisionScale = 1.4; // scale up on hit
+               retroAudio.playCollision();
+           }
            vy *= -0.5; // bounce
            vx *= 0.8;  // friction
          }
          
          // Wall collision
-         if (x < 0) { x = 0; vx *= -0.6; }
-         else if (x > w - size) { x = w - size; vx *= -0.6; }
+         if (!isBursting) {
+             if (x < 0) { 
+                 x = 0; 
+                 if (Math.abs(vx) > 2) {
+                     collisionScale = 1.3;
+                     retroAudio.playCollision();
+                 }
+                 vx *= -0.6; 
+             } else if (x > w - size) { 
+                 x = w - size; 
+                 if (Math.abs(vx) > 2) {
+                     collisionScale = 1.3;
+                     retroAudio.playCollision();
+                 }
+                 vx *= -0.6; 
+             }
+         }
 
-         life -= 0.001 * dt; // fade extremely slowly so they pile up
+         // Angry burst mechanic
+         if (e === 'angry' && vy > -2 && vy < 2 && !isBursting && y < h * 0.7) {
+             isBursting = true;
+             vx = 0;
+             vy = 0;
+             retroAudio.playBurst();
+         }
 
-         return { ...p, x, y, vx, vy, life };
+         if (isBursting) {
+             collisionScale += 0.2 * dt;
+             life -= 0.05 * dt;
+         } else {
+             life -= 0.002 * dt; // fade extremely slowly so they pile up, slightly faster than before to make shrink noticeable
+             collisionScale = 1.0 + (collisionScale - 1.0) * 0.85; // smoothly return to 1
+         }
+
+         return { ...p, x, y, vx, vy, life, collisionScale, isBursting };
       }).filter(p => p.life > 0)); 
 
       rAF = requestAnimationFrame(loop);
@@ -253,21 +481,34 @@ const BouncingEmotions = ({ currentEmotion }: { currentEmotion: Emotion }) => {
     return () => cancelAnimationFrame(rAF);
   }, []);
 
+  const EMOTION_COLORS: Record<Emotion, string> = {
+    neutral: '211,211,211',
+    happy: '57,255,20', // neon green
+    sad: '0,191,255', // deep sky blue
+    angry: '255,69,0', // red-orange
+    surprised: '255,105,180' // hot pink
+  };
+
   return (
-    <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden md:hidden">
-      {particles.map(p => (
-         <div
-           key={p.id}
-           className="absolute text-5xl transition-opacity duration-75"
-           style={{
-             transform: `translate(${p.x}px, ${p.y}px)`,
-             opacity: Math.min(p.life * 2, 1), // stay opaque longer
-             filter: `drop-shadow(0 -5px 15px rgba(57,255,20, ${Math.min(p.life * 1.5, 0.9)}))` // green overlay glow
-           }}
-         >
-           {EMOTION_EMOJIS[p.e]}
-         </div>
-      ))}
+    <div className="fixed inset-0 pointer-events-none z-40 overflow-hidden">
+      {particles.map(p => {
+        const color = EMOTION_COLORS[p.e];
+        const scale = Math.max(0.2, p.life) * p.collisionScale;
+        
+        return (
+          <div
+            key={p.id}
+            className="absolute text-5xl transition-opacity duration-75"
+            style={{
+              transform: `translate(${p.x}px, ${p.y}px) scale(${scale})`,
+              opacity: Math.min(p.life * 2, 1), // stay opaque longer
+              filter: `drop-shadow(0 -5px 15px rgba(${color}, ${Math.min(p.life * 1.5, 0.9)}))`
+            }}
+          >
+            {EMOTION_EMOJIS[p.e]}
+          </div>
+        );
+      })}
     </div>
   );
 };
@@ -293,6 +534,17 @@ export default function App() {
           EMOTION <span className="text-[#39FF14]">MIRROR</span>
         </div>
         <div className="flex gap-4 items-center pointer-events-auto">
+          {cameraActive && (
+            <button 
+                onClick={() => {
+                   retroAudio.playCameraStop();
+                   setCameraActive(false);
+                }}
+                className="px-3 py-1 bg-red-500/20 text-red-500 hover:bg-red-500/40 hover:text-red-400 border border-red-500/50 backdrop-blur-md transition-colors cursor-pointer text-sm font-label-caps tracking-widest"
+            >
+              STOP
+            </button>
+          )}
           <button className="text-white hover:text-[#39FF14] transition-colors p-2 cursor-pointer bg-black/60 backdrop-blur-md border border-white/10">
             <span className="material-symbols-outlined">code</span>
           </button>
@@ -322,7 +574,11 @@ export default function App() {
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.9 }}
                   transition={{ type: "spring", stiffness: 400, damping: 15 }}
-                  onClick={handleStartCamera}
+                  onClick={() => {
+                    retroAudio.init();
+                    retroAudio.playCameraStart();
+                    handleStartCamera();
+                  }}
                   className="mt-6 px-8 py-4 retro-border text-white hover:bg-[#39FF14] hover:border-[#39FF14] hover:text-black transition-colors uppercase font-label-caps tracking-widest pixel-shadow hover:pixel-shadow-active cursor-pointer"
                   style={{ touchAction: 'manipulation' }}
                 >
